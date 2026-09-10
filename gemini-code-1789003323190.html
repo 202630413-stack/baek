@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>오늘 할 것 추천기</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #1e293b;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            padding: 30px;
+            max-width: 450px;
+            width: 100%;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #38bdf8;
+            letter-spacing: -0.5px;
+        }
+
+        .card {
+            background-color: #0f172a;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            border: 1px solid #334155;
+        }
+
+        .image-box {
+            width: 100%;
+            height: 280px;
+            background-color: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .image-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+
+        .placeholder {
+            color: #94a3b8;
+            font-size: 15px;
+            padding: 0 20px;
+        }
+
+        .todo-info {
+            padding: 20px;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .todo-title {
+            font-size: 26px;
+            font-weight: 800;
+            color: #38bdf8;
+            line-height: 1.3;
+            word-break: keep-all;
+        }
+
+        .todo-category {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 8px;
+            letter-spacing: 2px;
+            font-weight: 600;
+        }
+
+        button {
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            color: #ffffff;
+            border: none;
+            padding: 16px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        /* 로딩 스피너 */
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border-left-color: #38bdf8;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>오늘 할 것</h1>
+
+        <div class="card">
+            <div class="image-box">
+                <div class="spinner" id="spinner"></div>
+                <p class="placeholder" id="placeholder">버튼을 눌러 오늘할것을 추천 받으세요</p>
+                <img id="todo-img" src="" alt="관련 이미지">
+            </div>
+            <div class="todo-info">
+                <div class="todo-title" id="todo-title">???</div>
+                <div class="todo-category" id="todo-category">RANDOM MISSION</div>
+            </div>
+        </div>
+
+        <button onclick="getRandomTodo()">오늘 뭐할까</button>
+    </div>
+
+    <script>
+        // 🔑 구글 Custom Search API를 쓰려면 키를 채워넣으세요. (없어도 대체 이미지로 작동합니다)
+        const GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY";
+        const GOOGLE_CX = "YOUR_SEARCH_ENGINE_ID";
+
+        // 첫 번째 단어 (명사)
+        const word1List = [
+            "선풍기", "냉장고", "공룡", "바나나", "키보드", 
+            "피자", "펭귄", "신발", "외계인", "양말", 
+            "선인장", "로봇", "풍선", "청소기", "자전거"
+        ];
+
+        // 두 번째 단어 (동사/행동)
+        const word2List = [
+            "헤엄치기", "세차하기", "물구나무 섭외하기", "연주하기", "칭찬하기",
+            "댄스 배틀하기", "설득하기", "고백하기", "인터뷰하기", "공중제비 돌기",
+            "비밀 공유하기", "마라톤 뛰기", "요가 가르치기", "상담해 주기", "숨바꼭질하기"
+        ];
+
+        let lastWord1 = -1;
+
+        async function getRandomTodo() {
+            const imgElement = document.getElementById('todo-img');
+            const placeholder = document.getElementById('placeholder');
+            const spinner = document.getElementById('spinner');
+            const titleElement = document.getElementById('todo-title');
+            const categoryElement = document.getElementById('todo-category');
+
+            // 첫 번째 단어 랜덤 추출 (연속 중복 방지)
+            let index1;
+            do {
+                index1 = Math.floor(Math.random() * word1List.length);
+            } while (index1 === lastWord1 && word1List.length > 1);
+            lastWord1 = index1;
+
+            // 두 번째 단어 랜덤 추출
+            const index2 = Math.floor(Math.random() * word2List.length);
+
+            const item1 = word1List[index1];
+            const item2 = word2List[index2];
+            const combinedTitle = `${item1} ${item2}`;
+
+            // 로딩 UI 처리
+            imgElement.style.display = 'none';
+            placeholder.style.display = 'none';
+            spinner.style.display = 'block';
+            titleElement.innerText = "추천하는 중...";
+            categoryElement.innerText = "SEARCHING...";
+
+            let imageUrl = "";
+
+            // Google API 키가 설정되어 있을 경우 구글 검색 API 연동
+            if (GOOGLE_API_KEY !== "YOUR_GOOGLE_API_KEY" && GOOGLE_CX !== "YOUR_SEARCH_ENGINE_ID") {
+                try {
+                    const googleUrl = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(combinedTitle)}&cx=${GOOGLE_CX}&key=${GOOGLE_API_KEY}&searchType=image&num=1`;
+                    const res = await fetch(googleUrl);
+                    const data = await res.json();
+                    if (data.items && data.items.length > 0) {
+                        imageUrl = data.items[0].link; // 구글 검색 상단 이미지 링크
+                    }
+                } catch (e) {
+                    console.error("Google Image Search Error:", e);
+                }
+            }
+
+            // Google API 키가 없거나 검색에 실패했을 경우 랜덤 이미지로 대체
+            if (!imageUrl) {
+                const randomLock = Math.floor(Math.random() * 1000);
+                imageUrl = `https://loremflickr.com/500/350/${encodeURIComponent(item1)}?lock=${randomLock}`;
+            }
+
+            // 이미지 로드 완료 후 화면에 표시
+            const imgLoader = new Image();
+            imgLoader.src = imageUrl;
+
+            imgLoader.onload = () => {
+                spinner.style.display = 'none';
+                imgElement.src = imageUrl;
+                imgElement.style.display = 'block';
+                titleElement.innerText = combinedTitle;
+                categoryElement.innerText = "TODAY'S MISSION";
+            };
+
+            imgLoader.onerror = () => {
+                // 이미지 로드 실패 시 무작위 대체 이미지 표시
+                spinner.style.display = 'none';
+                imgElement.src = `https://picsum.photos/500/350?random=${Math.random()}`;
+                imgElement.style.display = 'block';
+                titleElement.innerText = combinedTitle;
+                categoryElement.innerText = "TODAY'S MISSION";
+            };
+        }
+    </script>
+</body>
+</html>
