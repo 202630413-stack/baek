@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>잘못 했다.</title>
+  <title>잘못했다.</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
 
-  <!-- 폭죽 및 컨페티(색종이) 효과를 위한 라이브러리 추가 -->
+  <!-- 폭죽 및 컨페티(색종이) 효과 라이브러리 -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
@@ -22,6 +22,48 @@
       margin: 0;
       font-family: sans-serif;
       overflow-x: hidden;
+    }
+
+    /* 화면 전체 섬광 및 충격파 효과 */
+    #flashOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #ffffff;
+      z-index: 99999;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #flashOverlay.super-flash {
+      animation: superFlashAnim 0.3s ease-out;
+    }
+
+    @keyframes superFlashAnim {
+      0% { opacity: 1; background-color: #ffffff; }
+      50% { opacity: 0.9; background-color: #ff3333; }
+      100% { opacity: 0; }
+    }
+
+    /* 초강력 3D 미친 진동 애니메이션 */
+    @keyframes ultraExplosiveShake {
+      0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+      10% { transform: translate(-30px, -35px) scale(1.08) rotate(-5deg); }
+      20% { transform: translate(35px, 25px) scale(0.95) rotate(6deg); }
+      30% { transform: translate(-40px, 20px) scale(1.1) rotate(-4deg); }
+      40% { transform: translate(30px, -30px) scale(0.92) rotate(5deg); }
+      50% { transform: translate(-25px, 35px) scale(1.06) rotate(-6deg); }
+      60% { transform: translate(35px, -20px) scale(0.96) rotate(4deg); }
+      70% { transform: translate(-30px, 15px) scale(1.04) rotate(-3deg); }
+      80% { transform: translate(20px, -25px) scale(0.98) rotate(3deg); }
+      90% { transform: translate(-10px, 10px) scale(1.01) rotate(-1deg); }
+      100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+    }
+
+    .shake-ultra {
+      animation: ultraExplosiveShake 1.2s cubic-bezier(.36,.07,.19,.97) both;
     }
 
     #whiteout {
@@ -247,6 +289,7 @@
 </head>
 <body>
 
+  <div id="flashOverlay"></div>
   <div id="whiteout"></div>
 
   <!-- 0. 인트로 화면 -->
@@ -258,7 +301,7 @@
   <div id="mainScreen" class="screen">
     <img class="bg-image" src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80" alt="메인 배경">
     <div style="position: relative; z-index: 2; width: 90%; max-width: 440px;">
-      <div class="main-title">잘못 했다.</div>
+      <div class="main-title">잘못했다.</div>
       <button class="btn-red" onclick="goToInput()">핑계 찾기</button>
     </div>
   </div>
@@ -370,47 +413,69 @@
       showScreen('inputScreen');
     }
 
-    // 폭죽 및 색종이 흩날리기 연출 함수
-    function triggerExplosionEffect() {
-      // 1. 중앙 대폭발 (강력한 폭죽 효과)
-      confetti({
-        particleCount: 150,
-        spread: 100,
-        origin: { y: 0.6 },
-        startVelocity: 45,
-        ticks: 300,
-        zIndex: 9999
-      });
+    // 초강력 섬광 + 미친 진동 + 수만 개 색종이 연쇄 폭발
+    function triggerApocalypticExplosion() {
+      // 1. 눈부신 눈뽕 섬광 효과
+      const flash = document.getElementById('flashOverlay');
+      flash.classList.remove('super-flash');
+      void flash.offsetWidth; // DOM reflow
+      flash.classList.add('super-flash');
 
-      // 2. 좌우에서 솟아구치는 파이어워크 연출 (연속 폭발)
-      const duration = 2.5 * 1000;
-      const animationEnd = Date.now() + duration;
-      const defaults = { startVelocity: 30, spread: 360, ticks: 200, zIndex: 9999 };
+      // 2. 화면 전체 대지진급 3D 진동
+      document.body.classList.add('shake-ultra');
+      setTimeout(() => {
+        document.body.classList.remove('shake-ultra');
+      }, 1200);
 
-      const interval = setInterval(function() {
-        const timeLeft = animationEnd - Date.now();
+      // 3. 수만 개의 색종이 폭풍 (10단계 연속 연쇄 폭발)
+      let burstCount = 0;
+      const maxBursts = 12;
 
-        if (timeLeft <= 0) {
-          return clearInterval(interval);
+      const burstInterval = setInterval(() => {
+        burstCount++;
+        
+        // 사방에서 다각도로 뿜어져 나오는 고밀도 파티클
+        confetti({
+          particleCount: 200,
+          spread: 360,
+          startVelocity: Math.random() * 50 + 35,
+          ticks: 300,
+          scale: Math.random() * 0.6 + 0.8,
+          origin: {
+            x: Math.random(),
+            y: Math.random() * 0.7
+          },
+          colors: ['#ff0000', '#ffffff', '#ffcc00', '#00e5ff', '#ff00ff', '#00ff66'],
+          zIndex: 99999
+        });
+
+        if (burstCount >= maxBursts) {
+          clearInterval(burstInterval);
         }
+      }, 60);
 
-        const particleCount = 50 * (timeLeft / duration);
+      // 지속적으로 쏟아지는 하단 양쪽 대포 연출
+      const end = Date.now() + 2500;
+      (function frame() {
+        confetti({
+          particleCount: 15,
+          angle: 60,
+          spread: 80,
+          origin: { x: 0, y: 0.9 },
+          zIndex: 99999
+        });
+        confetti({
+          particleCount: 15,
+          angle: 120,
+          spread: 80,
+          origin: { x: 1, y: 0.9 },
+          zIndex: 99999
+        });
 
-        // 왼쪽 아래에서 폭발
-        confetti(Object.assign({}, defaults, {
-          particleCount,
-          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
-        }));
-        // 오른쪽 아래에서 폭발
-        confetti(Object.assign({}, defaults, {
-          particleCount,
-          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
-        }));
-      }, 250);
-    }
-
-    function randomInRange(min, max) {
-      return Math.random() * (max - min) + min;
+        if (Date.now() < end) {
+          requestAnimationFrame(frame);
+        }
+      }());
     }
 
     function generateCleanExcuse() {
@@ -473,10 +538,10 @@
 
       showScreen('resultScreen');
 
-      // 결과 화면이 켜지면서 폭죽/색종이 효과 발사
+      // 화면 전환 직후 초강력 폭풍 연출 발동
       setTimeout(() => {
-        triggerExplosionEffect();
-      }, 150);
+        triggerApocalypticExplosion();
+      }, 50);
     }
 
     function goToFeedback() {
