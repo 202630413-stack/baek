@@ -1,254 +1,450 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>오늘 할 것 추천기</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Pretendard', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>잘못 했다.</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
 
-        body {
-            background-color: #0f172a;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
+  <style>
+    body {
+      background-color: #ffffff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+      overflow-x: hidden;
+    }
 
-        .container {
-            background-color: #1e293b;
-            border-radius: 20px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
-            padding: 30px;
-            max-width: 450px;
-            width: 100%;
-            text-align: center;
-            border: 1px solid #334155;
-        }
+    #whiteout {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #ffffff;
+      z-index: 10000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease-in-out;
+    }
 
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
-            color: #38bdf8;
-            letter-spacing: -0.5px;
-        }
+    #whiteout.flash {
+      opacity: 1;
+    }
 
-        .card {
-            background-color: #0f172a;
-            border-radius: 14px;
-            overflow: hidden;
-            margin-bottom: 25px;
-            border: 1px solid #334155;
-        }
+    .screen {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+      box-sizing: border-box;
+    }
 
-        .image-box {
-            width: 100%;
-            height: 280px;
-            background-color: #1e293b;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
+    .screen.active {
+      display: flex;
+    }
 
-        .image-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: none;
-        }
+    .screen.fade-in {
+      opacity: 1;
+      transform: translateY(0);
+    }
 
-        .placeholder {
-            color: #94a3b8;
-            font-size: 15px;
-            padding: 0 20px;
-        }
+    .bg-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 1;
+    }
 
-        .todo-info {
-            padding: 20px;
-            min-height: 100px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
+    .content-card {
+      position: relative;
+      z-index: 2;
+      width: 90%;
+      max-width: 420px;
+      background-color: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(5px);
+      padding: 30px 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      box-sizing: border-box;
+    }
 
-        .todo-title {
-            font-size: 26px;
-            font-weight: 800;
-            color: #38bdf8;
-            line-height: 1.3;
-            word-break: keep-all;
-        }
+    #introScreen {
+      cursor: pointer;
+      user-select: none;
+      z-index: 9999;
+      background-color: #ffffff;
+    }
 
-        .todo-category {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 8px;
-            letter-spacing: 2px;
-            font-weight: 600;
-        }
+    .intro-title {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: #333333;
+      letter-spacing: 2px;
+    }
 
-        button {
-            background: linear-gradient(135deg, #38bdf8, #818cf8);
-            color: #ffffff;
-            border: none;
-            padding: 16px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            width: 100%;
-            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3);
-        }
+    /* 메인 타이틀: 궁서체 고정 및 크기 확대 (3.6rem -> 4.8rem) */
+    .main-title {
+      font-family: 'Gowun Batang', '궁서', 'Gungsuh', 'GungsuhChe', '바탕', serif !important;
+      font-weight: 700;
+      color: #ff0000;
+      font-size: 4.8rem;
+      line-height: 1.1;
+      margin: 0 0 2rem 0;
+      word-break: keep-all;
+      letter-spacing: -1.5px;
 
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.5);
-        }
+      text-shadow: 
+        -2px -2px 0 #fff,  
+         2px -2px 0 #fff,
+        -2px  2px 0 #fff,
+         2px  2px 0 #fff,
+         0px  0px 14px rgba(255, 255, 255, 0.95);
 
-        button:active {
-            transform: translateY(1px);
-        }
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
-        /* 로딩 스피너 */
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border-left-color: #38bdf8;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
+    .btn-red {
+      background-color: #ff0000;
+      color: #ffffff;
+      border: none;
+      padding: 16px 30px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 12px rgba(255, 0, 0, 0.3);
+      transition: all 0.2s ease;
+      position: relative;
+      z-index: 2;
+    }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    .btn-red:hover {
+      background-color: #d00000;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 0, 0, 0.4);
+    }
+
+    .btn-red:active {
+      transform: translateY(1px);
+    }
+
+    .btn-secondary {
+      background-color: #333333;
+      margin-top: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-secondary:hover {
+      background-color: #111111;
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-eval-good { background-color: #28a745; }
+    .btn-eval-good:hover { background-color: #218838; }
+    
+    .btn-eval-soso { background-color: #ffc107; color: #111; }
+    .btn-eval-soso:hover { background-color: #e0a800; }
+
+    .btn-eval-bad { background-color: #dc3545; }
+    .btn-eval-bad:hover { background-color: #c82333; }
+
+    .input-group {
+      width: 100%;
+      margin-bottom: 1.2rem;
+      text-align: left;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+      color: #111;
+      font-size: 1.05rem;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ff0000;
+      border-radius: 6px;
+      box-sizing: border-box;
+      font-size: 1rem;
+      background-color: rgba(255, 255, 255, 0.95);
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #cc0000;
+      box-shadow: 0 0 8px rgba(255, 0, 0, 0.3);
+    }
+
+    .image-box {
+      width: 100%;
+      height: 200px;
+      background-color: #f5f5f5;
+      border: 2px solid #ff0000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.2rem;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .image-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .excuse-box {
+      background-color: rgba(255, 255, 255, 0.95);
+      border: 2px dashed #ff0000;
+      padding: 18px;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      line-height: 1.6;
+      word-break: keep-all;
+      margin-bottom: 1.2rem;
+      width: 100%;
+      box-sizing: border-box;
+      color: #111;
+      font-weight: 500;
+      min-height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>오늘 할 것</h1>
+  <div id="whiteout"></div>
 
-        <div class="card">
-            <div class="image-box">
-                <div class="spinner" id="spinner"></div>
-                <p class="placeholder" id="placeholder">버튼을 눌러 오늘할것을 추천 받으세요</p>
-                <img id="todo-img" src="" alt="관련 이미지">
-            </div>
-            <div class="todo-info">
-                <div class="todo-title" id="todo-title">???</div>
-                <div class="todo-category" id="todo-category">RANDOM MISSION</div>
-            </div>
-        </div>
+  <!-- 0. 인트로 화면 -->
+  <div id="introScreen" class="screen active fade-in" onclick="startAppWithFlash()">
+    <div class="intro-title">made by 백경목</div>
+  </div>
 
-        <button onclick="getRandomTodo()">오늘 뭐할까</button>
+  <!-- 1. 메인 홈 화면 -->
+  <div id="mainScreen" class="screen">
+    <img class="bg-image" src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1920&q=80" alt="메인 배경">
+    <div style="position: relative; z-index: 2; width: 90%; max-width: 440px;">
+      <div class="main-title">잘못 했다.</div>
+      <button class="btn-red" onclick="goToInput()">핑계 찾기</button>
     </div>
+  </div>
 
-    <script>
-        // 🔑 구글 Custom Search API를 쓰려면 키를 채워넣으세요. (없어도 대체 이미지로 작동합니다)
-        const GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY";
-        const GOOGLE_CX = "YOUR_SEARCH_ENGINE_ID";
+  <!-- 2. 입력 화면 -->
+  <div id="inputScreen" class="screen">
+    <img class="bg-image" src="https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1920&q=80" alt="입력창 배경">
+    <div class="content-card">
+      <h2 style="color: #ff0000; margin-top: 0; margin-bottom: 1.5rem;">상황 입력</h2>
+      
+      <div class="input-group">
+        <label for="wrongdoing">1. 잘못</label>
+        <input type="text" id="wrongdoing">
+      </div>
 
-        // 첫 번째 단어 (명사)
-        const word1List = [
-            "선풍기", "냉장고", "공룡", "바나나", "키보드", 
-            "피자", "펭귄", "신발", "외계인", "양말", 
-            "선인장", "로봇", "풍선", "청소기", "자전거"
-        ];
+      <div class="input-group">
+        <label for="target">2. 누가 화났는가?</label>
+        <input type="text" id="target">
+      </div>
 
-        // 두 번째 단어 (동사/행동)
-        const word2List = [
-            "헤엄치기", "세차하기", "물구나무 섭외하기", "연주하기", "칭찬하기",
-            "댄스 배틀하기", "설득하기", "고백하기", "인터뷰하기", "공중제비 돌기",
-            "비밀 공유하기", "마라톤 뛰기", "요가 가르치기", "상담해 주기", "숨바꼭질하기"
-        ];
+      <div class="input-group">
+        <label for="location">3. 당신은 어디에 있는가</label>
+        <input type="text" id="location">
+      </div>
 
-        let lastWord1 = -1;
+      <button class="btn-red" onclick="generateCleanExcuse()" style="margin-top: 10px;">핑계를 만들어라</button>
+    </div>
+  </div>
 
-        async function getRandomTodo() {
-            const imgElement = document.getElementById('todo-img');
-            const placeholder = document.getElementById('placeholder');
-            const spinner = document.getElementById('spinner');
-            const titleElement = document.getElementById('todo-title');
-            const categoryElement = document.getElementById('todo-category');
+  <!-- 3. 결과 화면 -->
+  <div id="resultScreen" class="screen">
+    <img class="bg-image" src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1920&q=80" alt="결과 배경">
+    <div class="content-card">
+      <div class="image-box" id="imageBox">
+        <img id="excuseImage" src="" alt="결과 이미지">
+      </div>
 
-            // 첫 번째 단어 랜덤 추출 (연속 중복 방지)
-            let index1;
-            do {
-                index1 = Math.floor(Math.random() * word1List.length);
-            } while (index1 === lastWord1 && word1List.length > 1);
-            lastWord1 = index1;
+      <div class="excuse-box" id="excuseText"></div>
 
-            // 두 번째 단어 랜덤 추출
-            const index2 = Math.floor(Math.random() * word2List.length);
+      <button class="btn-red" onclick="goToInput()">다시 핑계 만들기</button>
+      <button class="btn-red btn-secondary" onclick="goToFeedback()">결과 평가</button>
+    </div>
+  </div>
 
-            const item1 = word1List[index1];
-            const item2 = word2List[index2];
-            const combinedTitle = `${item1} ${item2}`;
+  <!-- 4. 결과 평가 화면 -->
+  <div id="feedbackScreen" class="screen">
+    <img class="bg-image" src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1920&q=80" alt="평가 배경">
+    <div class="content-card">
+      <h2 style="color: #333; margin-top: 0; margin-bottom: 1rem;">핑계 결과 평가</h2>
+      <p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1.5rem; color: #555; word-break: keep-all;">
+        이 핑계로 위기를 탈출할 수 있을 것 같나요?
+      </p>
 
-            // 로딩 UI 처리
-            imgElement.style.display = 'none';
-            placeholder.style.display = 'none';
-            spinner.style.display = 'block';
-            titleElement.innerText = "추천하는 중...";
-            categoryElement.innerText = "SEARCHING...";
+      <button class="btn-red btn-eval-good" style="margin-bottom: 10px;" onclick="submitFeedback('성공적!')">🌟 완벽하게 속일 수 있다</button>
+      <button class="btn-red btn-eval-soso" style="margin-bottom: 10px;" onclick="submitFeedback('애매함')">🤔 반신반의 할 것 같다</button>
+      <button class="btn-red btn-eval-bad" style="margin-bottom: 20px;" onclick="submitFeedback('최악')">🗑️ 이딴 핑계 대면 죽는다</button>
 
-            let imageUrl = "";
+      <button class="btn-red btn-secondary" onclick="goToMain()">평가 건너뛰고 홈으로</button>
+    </div>
+  </div>
 
-            // Google API 키가 설정되어 있을 경우 구글 검색 API 연동
-            if (GOOGLE_API_KEY !== "YOUR_GOOGLE_API_KEY" && GOOGLE_CX !== "YOUR_SEARCH_ENGINE_ID") {
-                try {
-                    const googleUrl = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(combinedTitle)}&cx=${GOOGLE_CX}&key=${GOOGLE_API_KEY}&searchType=image&num=1`;
-                    const res = await fetch(googleUrl);
-                    const data = await res.json();
-                    if (data.items && data.items.length > 0) {
-                        imageUrl = data.items[0].link; // 구글 검색 상단 이미지 링크
-                    }
-                } catch (e) {
-                    console.error("Google Image Search Error:", e);
-                }
-            }
+  <script>
+    let isTransitioning = false;
 
-            // Google API 키가 없거나 검색에 실패했을 경우 랜덤 이미지로 대체
-            if (!imageUrl) {
-                const randomLock = Math.floor(Math.random() * 1000);
-                imageUrl = `https://loremflickr.com/500/350/${encodeURIComponent(item1)}?lock=${randomLock}`;
-            }
+    function startAppWithFlash() {
+      if (isTransitioning) return;
+      isTransitioning = true;
 
-            // 이미지 로드 완료 후 화면에 표시
-            const imgLoader = new Image();
-            imgLoader.src = imageUrl;
+      const whiteout = document.getElementById('whiteout');
+      whiteout.classList.add('flash');
 
-            imgLoader.onload = () => {
-                spinner.style.display = 'none';
-                imgElement.src = imageUrl;
-                imgElement.style.display = 'block';
-                titleElement.innerText = combinedTitle;
-                categoryElement.innerText = "TODAY'S MISSION";
-            };
+      setTimeout(() => {
+        const introScreen = document.getElementById('introScreen');
+        const mainScreen = document.getElementById('mainScreen');
 
-            imgLoader.onerror = () => {
-                // 이미지 로드 실패 시 무작위 대체 이미지 표시
-                spinner.style.display = 'none';
-                imgElement.src = `https://picsum.photos/500/350?random=${Math.random()}`;
-                imgElement.style.display = 'block';
-                titleElement.innerText = combinedTitle;
-                categoryElement.innerText = "TODAY'S MISSION";
-            };
-        }
-    </script>
+        introScreen.classList.remove('active', 'fade-in');
+        mainScreen.classList.add('active');
+
+        setTimeout(() => {
+          whiteout.classList.remove('flash');
+          mainScreen.classList.add('fade-in');
+          isTransitioning = false;
+        }, 100);
+      }, 500);
+    }
+
+    function showScreen(screenId) {
+      const allScreens = document.querySelectorAll('.screen');
+      const targetScreen = document.getElementById(screenId);
+
+      allScreens.forEach(screen => {
+        screen.classList.remove('fade-in');
+        setTimeout(() => {
+          if (!screen.classList.contains('fade-in')) {
+            screen.classList.remove('active');
+          }
+        }, 200);
+      });
+
+      setTimeout(() => {
+        targetScreen.classList.add('active');
+        setTimeout(() => {
+          targetScreen.classList.add('fade-in');
+        }, 50);
+      }, 200);
+    }
+
+    function goToInput() {
+      showScreen('inputScreen');
+    }
+
+    function generateCleanExcuse() {
+      const wrongdoing = document.getElementById('wrongdoing').value.trim() || '실수';
+      const target = document.getElementById('target').value.trim() || '상대방';
+      const location = document.getElementById('location').value.trim() || '어딘가';
+
+      const intros = [
+        `${target}님, 진짜 무릎 꿇고 사죄드립니다...`,
+        `아 ${target}님, 믿기 힘드시겠지만 정말 피치 못할 사정이 생겼습니다.`,
+        `${target}님, 제발 한 번만 이야기라도 들어주십시오.`,
+        `변명처럼 들리시겠지만 너무나 억울해서 눈물이 다 납니다, ${target}님.`,
+        `${target}님 죄송합니다! 정말 예상치 못한 도플갱어급 변수가 발생했습니다.`,
+        `${target}님, 제가 오늘 액운이 마구 낀 것 같습니다...`,
+        `하 하늘이 무너지는 것 같습니다, ${target}님.`,
+        `${target}님, 당장 찾아뵈어 빌고 싶지만 사정이 생겨 버렸습니다.`,
+        `${target}님, 너그러운 마음으로 한 번만 너그럽게 품어주십시오.`,
+        `${target}님, 인생 최대의 돌발상황을 맞이했습니다.`
+      ];
+
+      const reasons = [
+        `${location}에서 나서려는데 갑자기 스마트폰에 3년 전 사진이 팝업되며 강제 복구 및 업데이트가 시작되어 연락을 못 드렸습니다.`,
+        `${location} 근처에서 거울을 보다가 옆 사람과 정면충돌해 안경 날개가 부러져 부랴부랴 테이프로 때우느라 지체되었습니다.`,
+        `${location}에서 출발하려던 찰나, 지나가던 비둘기가 옷에 거대한 실례를 하여 근처 의류 매장에서 급히 옷을 사 입었습니다.`,
+        `${location} 엘리베이터가 갑자기 점검 중으로 바뀌면서 계단으로 내려오다 다리가 풀려 잠시 휴식을 취해야 했습니다.`,
+        `${location} 부근에서 울고 있는 어린아이의 보호자를 찾아주려 경찰서까지 동행하느라 시간이 훌쩍 지나버렸습니다.`,
+        `${location}에서 나가려는데 갑자기 가방 스트랩이 뚝 떨어지며 소지품이 도로 전체에 쏟아져 이를 줍느라 난리가 났습니다.`,
+        `${location} 근처 버스 정류장에서 인파에 밀려 제가 타야 할 버스를 눈앞에서 3대나 놓치고 말았습니다.`,
+        `${location}에서 급하게 나오다 신발 끈이 반대쪽 신발 고리에 걸려 넘어지면서 무릎에 피가 나는 바람에 급하게 약국에 다녀왔습니다.`,
+        `${location}에서 단수가 발생해 마지막 세수를 못 하고 대기하느라 시작부터 모든 일정이 꼬여버렸습니다.`,
+        `${location} 근처 매장에서 구매한 음료가 가방 안에서 터지는 바람에 지갑과 서류를 말리느라 시간을 다 썼습니다.`,
+        `${location}에서 길을 안내해 드린 외국인분이 제 손을 잡고 놓아주지 않으며 감사의 인사를 연발해 발이 묶였습니다.`,
+        `${location} 근처에서 갑자기 심각한 복통이 찾아와 가까운 건물 화장실을 전전하느라 제정신이 아니었습니다.`,
+        `${location}을(를) 벗어나려는데 지나가던 택시가 물웅덩이를 밟아 옷이 젖는 바람에 드라이어로 급히 말렸습니다.`,
+        `${location}에서 블루투스 이어폰을 떨어뜨려 하수구 구멍 사이로 들어갈 뻔한 것을 건져내느라 고생했습니다.`,
+        `${location}에서 나서려는데 갑자기 문고리가 헛돌면서 갇히는 바람에 열쇠공 출장 기사님을 불러 겨우 탈출했습니다.`
+      ];
+
+      const outros = [
+        `결국 이 모든 악재가 겹쳐 ${wrongdoing}을(를) 저지르고 말았습니다!`,
+        `이 여파로 ${wrongdoing}이(가) 발생했는데, 정말 제 의지가 아니었습니다!`,
+        `이 비극적인 상황 때문에 ${wrongdoing}을(를) 하게 되었으나, 지금 전속력으로 복귀 중입니다!`,
+        `다음부터는 이런 초자연적 변수까지 계산해서 움직이겠습니다. ${wrongdoing} 정말 죄송합니다!`,
+        `결국 ${wrongdoing}이라는 대참사로 이어졌지만, 제 모든 것을 걸고 수습하겠습니다!`,
+        `너그럽게 딱 한 번만 용서해 주신다면 평생 ${target}님의 충직한 일꾼이 되겠습니다!`,
+        `어떠한 훈계와 처벌도 달게 받겠습니다. 다만 ${wrongdoing}에 대해서는 진심으로 깊이 반성합니다.`,
+        `지금 즉시 달려가고 있습니다! 도착하는 대로 다시 한번 크게 사과드리겠습니다.`,
+        `제 무능과 불운이 겹쳐 ${wrongdoing}을(를) 만들었지만, 후속 조치는 완벽하게 처리하겠습니다!`,
+        `다시는 ${wrongdoing} 같은 일이 없도록 피눈물 흘리며 개선하겠습니다. 죄송합니다!`
+      ];
+
+      const randIntro = intros[Math.floor(Math.random() * intros.length)];
+      const randReason = reasons[Math.floor(Math.random() * reasons.length)];
+      const randOutro = outros[Math.floor(Math.random() * outros.length)];
+
+      document.getElementById('excuseText').innerText = `${randIntro} ${randReason} ${randOutro}`;
+
+      const randomImgId = Math.floor(Math.random() * 200) + 1;
+      document.getElementById('excuseImage').src = `https://picsum.photos/id/${randomImgId}/400/220`;
+
+      showScreen('resultScreen');
+    }
+
+    function goToFeedback() {
+      showScreen('feedbackScreen');
+    }
+
+    function submitFeedback(opinion) {
+      alert(`[평가: ${opinion}] 소중한 평가가 반영되었습니다!`);
+      goToMain();
+    }
+
+    function goToMain() {
+      document.getElementById('wrongdoing').value = '';
+      document.getElementById('target').value = '';
+      document.getElementById('location').value = '';
+      showScreen('mainScreen');
+    }
+  </script>
+
 </body>
 </html>
