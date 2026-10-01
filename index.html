@@ -9,6 +9,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&display=swap" rel="stylesheet">
 
+  <!-- 폭죽 및 컨페티(색종이) 효과를 위한 라이브러리 추가 -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
     body {
       background-color: #ffffff;
@@ -104,7 +107,6 @@
       letter-spacing: 2px;
     }
 
-    /* 메인 타이틀: 궁서체 고정 및 크기 확대 (3.6rem -> 4.8rem) */
     .main-title {
       font-family: 'Gowun Batang', '궁서', 'Gungsuh', 'GungsuhChe', '바탕', serif !important;
       font-weight: 700;
@@ -310,9 +312,9 @@
         이 핑계로 위기를 탈출할 수 있을 것 같나요?
       </p>
 
-      <button class="btn-red btn-eval-good" style="margin-bottom: 10px;" onclick="submitFeedback('성공적!')">🌟 완벽하게 속일 수 있다</button>
-      <button class="btn-red btn-eval-soso" style="margin-bottom: 10px;" onclick="submitFeedback('애매함')">🤔 반신반의 할 것 같다</button>
-      <button class="btn-red btn-eval-bad" style="margin-bottom: 20px;" onclick="submitFeedback('최악')">🗑️ 이딴 핑계 대면 죽는다</button>
+      <button class="btn-red btn-eval-good" style="margin-bottom: 10px;" onclick="submitFeedback('매우 만족함')">🟢 매우 만족함</button>
+      <button class="btn-red btn-eval-soso" style="margin-bottom: 10px;" onclick="submitFeedback('애매함')">🟠 애매함</button>
+      <button class="btn-red btn-eval-bad" style="margin-bottom: 20px;" onclick="submitFeedback('아주 불만족함')">🔴 아주 불만족함</button>
 
       <button class="btn-red btn-secondary" onclick="goToMain()">평가 건너뛰고 홈으로</button>
     </div>
@@ -366,6 +368,49 @@
 
     function goToInput() {
       showScreen('inputScreen');
+    }
+
+    // 폭죽 및 색종이 흩날리기 연출 함수
+    function triggerExplosionEffect() {
+      // 1. 중앙 대폭발 (강력한 폭죽 효과)
+      confetti({
+        particleCount: 150,
+        spread: 100,
+        origin: { y: 0.6 },
+        startVelocity: 45,
+        ticks: 300,
+        zIndex: 9999
+      });
+
+      // 2. 좌우에서 솟아구치는 파이어워크 연출 (연속 폭발)
+      const duration = 2.5 * 1000;
+      const animationEnd = Date.now() + duration;
+      const defaults = { startVelocity: 30, spread: 360, ticks: 200, zIndex: 9999 };
+
+      const interval = setInterval(function() {
+        const timeLeft = animationEnd - Date.now();
+
+        if (timeLeft <= 0) {
+          return clearInterval(interval);
+        }
+
+        const particleCount = 50 * (timeLeft / duration);
+
+        // 왼쪽 아래에서 폭발
+        confetti(Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+        }));
+        // 오른쪽 아래에서 폭발
+        confetti(Object.assign({}, defaults, {
+          particleCount,
+          origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+        }));
+      }, 250);
+    }
+
+    function randomInRange(min, max) {
+      return Math.random() * (max - min) + min;
     }
 
     function generateCleanExcuse() {
@@ -427,6 +472,11 @@
       document.getElementById('excuseImage').src = `https://picsum.photos/id/${randomImgId}/400/220`;
 
       showScreen('resultScreen');
+
+      // 결과 화면이 켜지면서 폭죽/색종이 효과 발사
+      setTimeout(() => {
+        triggerExplosionEffect();
+      }, 150);
     }
 
     function goToFeedback() {
